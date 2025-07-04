@@ -1,0 +1,15 @@
+# 가상환경 및 컴파일된 파일 무시
+venv/
+__pycache__/
+*.pyc
+
+# 마이그레이션 폴더 무시
+migrations/
+
+# Alembic 관련
+alembic/README
+
+# versions 폴더는 포함하되 안의 .py, .pyc 파일은 무시
+!alembic/versions/
+alembic/versions/*.py
+alembic/versions/*.pyc
