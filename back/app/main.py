@@ -16,7 +16,7 @@ FastAPI 앱 진입점 (main.py)
 from fastapi import FastAPI
 from back.app.routers import base
 from app.config.settings import settings
-from app.middlewares.cors import add_cors
+from app.middlewares import cors, secure_headers, session, https_redirect, access_log, rate_limiter
 from app.database import engine, Base
 import app.models  # 모델 자동 인식용 import
 
@@ -26,8 +26,23 @@ def create_app() -> FastAPI:
     """
     app = FastAPI(title=settings.PROJECT_NAME)
 
-    # CORS 미들웨어 등록
-    add_cors(app)
+    # 1. Access 로그 기록 (요청/응답 로그를 콘솔 또는 파일로 기록)
+    access_log.add_access_log(app)
+
+    # 2. HTTPS 리디렉션 (운영 환경에서만 HTTP → HTTPS 강제 전환)
+    https_redirect.add_https_redirect(app)
+
+    # 3. 보안 헤더 삽입 (XSS, MIME 스니핑, iframe 삽입 등 보호)
+    secure_headers.add_secure_headers(app)
+
+    # 4. 세션 쿠키 설정 (환경에 따라 Secure, SameSite 등 다르게 설정)
+    session.add_session_middleware(app)
+
+    # 5. CORS 정책 적용 (로컬은 전체 허용, 운영은 특정 도메인만 허용)
+    cors.add_cors(app)
+
+    # 6. Rate Limiting 설정 (라우터 단위에서 @limiter.limit 데코레이터로 적용)
+    rate_limiter.add_rate_limiter(app)
     
     # 로컬 환경에서만 DB 테이블 자동 생성
     if settings.env == "local":

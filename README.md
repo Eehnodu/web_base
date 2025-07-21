@@ -210,3 +210,113 @@ pymysql
 - `/redoc` : ReDoc 문서화
 - Alembic 변경사항 추적: `alembic/history`
 - Tailwind 설정: `tailwind.config.js`, `global.css`
+
+
+---
+
+## 📌 미들웨어 보안 구성
+
+### ✅ 적용된 미들웨어 목록
+
+| 미들웨어 | 설명 |
+|----------|------|
+| **AccessLogMiddleware** | 모든 요청/응답 로그 기록 (`IP, 메서드, 경로, 응답시간`) |
+| **SecureHeadersMiddleware** | `X-Frame-Options`, `X-XSS-Protection`, `Content-Security-Policy` 등 보안 헤더 설정 |
+| **HTTPSRedirectMiddleware** | 운영 환경에서 HTTP 요청을 HTTPS로 자동 리디렉션 |
+| **SessionMiddleware** | `SameSite`, `Secure`, `HttpOnly` 등 쿠키 기반 세션 설정 |
+| **CORS Middleware** | 환경에 따라 출처 허용 정책 분기 적용 |
+| **RateLimiter (slowapi)** | 요청 과다 IP에 대해 API 호출 제한 (`@limiter.limit(...)`) |
+
+### ✅ 미들웨어 적용 순서 (main.py)
+
+```python
+    # 1. 요청/응답 Access 로그 기록
+    access_log.add_access_log(app)
+
+    # 2. 운영 환경 HTTPS 리디렉션
+    https_redirect.add_https_redirect(app)
+
+    # 3. 보안 헤더 삽입
+    secure_headers.add_secure_headers(app)
+
+    # 4. 세션 쿠키 보안 설정
+    session.add_session_middleware(app)
+
+    # 5. CORS 허용 정책 적용
+    cors.add_cors(app)
+
+    # 6. Rate Limiting 설정 (라우터 단위로 적용 가능)
+    rate_limiter.add_rate_limiter(app)
+```
+
+---
+
+## 🔐 Rate Limiting 적용 방법
+
+### 1. 설치
+
+```bash
+pip install slowapi
+```
+
+### 2. 사용 예시
+
+라우터 함수 위에 `@limiter.limit("5/minute")` 데코레이터로 제한 설정:
+
+```python
+from app.middlewares.rate_limiter import limiter
+
+@router.get("/ping")
+@limiter.limit("5/minute")
+def ping():
+    return {"msg": "pong!"}
+```
+
+### 3. 전역 설정 위치
+
+```python
+# app/main.py
+rate_limiter.add_rate_limiter(app)
+```
+
+내부적으로 `limiter.init_app()`, 예외 핸들러 등록이 포함됩니다.
+
+---
+
+## 🔑 JWT 인증 사용 방법
+
+### 1. 토큰 발급
+
+```python
+from app.middlewares.auth_jwt import create_access_token
+
+def login():
+    access_token = create_access_token(data={"sub": user_id})
+    return {"access_token": access_token}
+```
+
+### 2. 인증된 라우터 보호
+
+```python
+from fastapi import Depends
+from app.middlewares.auth_jwt import get_current_user
+
+@router.get("/secure-data")
+def get_secure_data(user=Depends(get_current_user)):
+    return {"msg": f"Welcome, {user['sub']}"}
+```
+
+### 3. 요청 시 헤더에 포함
+
+```http
+Authorization: Bearer <access_token>
+```
+
+---
+
+## ✅ 의존성 추가 항목
+
+```txt
+python-jose    # JWT 토큰 생성/해석
+slowapi        # Rate limiting
+```

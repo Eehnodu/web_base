@@ -17,6 +17,8 @@ CORS는 프론트엔드(React, Vue 등)와 백엔드(FastAPI)가 서로 다른 �
 
 from fastapi.middleware.cors import CORSMiddleware
 
+from back.app.config import settings
+
 def add_cors(app):
     """
     FastAPI 애플리케이션에 CORS 미들웨어를 추가하는 함수.
@@ -38,10 +40,19 @@ def add_cors(app):
         - allow_headers=["*"]:
             모든 HTTP 요청 헤더를 허용. 예: Content-Type, Authorization 등.
     """
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],            # 모든 출처 허용 (운영 시 도메인 제한 권장)
-        allow_credentials=True,         # 쿠키/인증 헤더 포함 허용
-        allow_methods=["*"],            # 모든 HTTP 메서드 허용
-        allow_headers=["*"],            # 모든 헤더 허용
-    )
+    if settings.env == "prod":
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["미정"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+    else:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],    # 모든 출처 허용 (운영 시 도메인 제한 권장)
+            allow_credentials=True, # 쿠키/인증 헤더 포함 허용
+            allow_methods=["*"],    # 모든 HTTP 메서드 허용
+            allow_headers=["*"],    # 모든 헤더 허용
+        )
