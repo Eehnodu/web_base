@@ -19,14 +19,19 @@ from pydantic import BaseModel
 from datetime import datetime
 
 class UserCreate(BaseModel):
-    username: str
-    email: str
+    user_id: str    
+    user_name: str
+    user_email: str
+    user_password: str
 
 class UserOut(BaseModel):
     id: int
-    username: str
-    email: str
-    created_at: datetime
+    user_id: str
+    user_name: str
+    user_email: str
+    user_password: str
+    user_created_at: datetime
+    user_updated_at: datetime
 
     class Config:
         from_attributes = True

@@ -12,8 +12,8 @@ attendance_service.py
 """
 
 from sqlalchemy.orm import Session
-from app.repository import base_repo
+from app.repository import user_repo
 from app.models import User
 
-def create_user(db: Session, username: str, email: str) -> User:
-    return base_repo.create_user(db, username=username, email=email)
+def create_user(db: Session, user_id: str, user_name: str, user_email: str, user_password: str) -> User:  
+    return user_repo.create_user(db, user_id=user_id, user_name=user_name, user_email=user_email, user_password=user_password) 

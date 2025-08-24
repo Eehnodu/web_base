@@ -17,7 +17,17 @@ CORS는 프론트엔드(React, Vue 등)와 백엔드(FastAPI)가 서로 다른 �
 
 from fastapi.middleware.cors import CORSMiddleware
 
-from back.app.config import settings
+from app.config.settings import settings
+
+
+prod_origins = [
+    "https://"
+]
+
+local_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
 
 def add_cors(app):
     """
@@ -43,7 +53,7 @@ def add_cors(app):
     if settings.env == "prod":
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=["미정"],
+            allow_origins=prod_origins,
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
@@ -51,7 +61,7 @@ def add_cors(app):
     else:
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],    # 모든 출처 허용 (운영 시 도메인 제한 권장)
+            allow_origins=local_origins,    # 모든 출처 허용 (운영 시 도메인 제한 권장)
             allow_credentials=True, # 쿠키/인증 헤더 포함 허용
             allow_methods=["*"],    # 모든 HTTP 메서드 허용
             allow_headers=["*"],    # 모든 헤더 허용

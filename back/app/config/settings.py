@@ -14,12 +14,15 @@ settings.py
     - DB 연결, API 기본 정보 등 프로젝트 전체 설정을 중앙 집중화
 """
 
-from pydantic_settings import BaseSettings
-import os
+from pydantic_settings import BaseSettings, SettingsConfigDict
 import socket
 
 # 환경설정 클래스 (BaseSettings 상속 → .env에서 값 자동 로드)
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
     # 프로젝트 관련 메타 정보
     PROJECT_NAME: str = "Base App"  # 프로젝트 이름
     API_PREFIX: str = "/api"           # API 엔드포인트 prefix
@@ -41,10 +44,6 @@ class Settings(BaseSettings):
 
     # 시크릿 키 (세션 쿠키 서명 등 보안 기능에 사용됨. 반드시 노출 금지!)
     secret_key: str
-
-    # 환경 변수 파일 경로 설정 (.env 파일에서 값을 불러옴)
-    class Config:
-        env_file = ".env"
 
     @property
     def env(self) -> str:

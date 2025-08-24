@@ -16,8 +16,8 @@ attendance_repo.py
 from sqlalchemy.orm import Session
 from app.models import User
 
-def create_user(db: Session, username: str, email: str) -> User:
-    new_user = User(username=username, email=email)
+def create_user(db: Session, user_id: str, user_name: str, user_email: str, user_password: str) -> User:
+    new_user = User(user_id=user_id, user_name=user_name, user_email=user_email, user_password=user_password) 
     db.add(new_user)
     db.commit()
     db.refresh(new_user)

@@ -14,7 +14,7 @@ FastAPI 앱 진입점 (main.py)
 """
 
 from fastapi import FastAPI
-from back.app.routers import base
+from app.routers import user, auth
 from app.config.settings import settings
 from app.middlewares import cors, secure_headers, session, https_redirect, access_log, rate_limiter
 from app.database import engine, Base
@@ -49,7 +49,8 @@ def create_app() -> FastAPI:
         Base.metadata.create_all(bind=engine)
 
     # 샘플 라우터 등록
-    app.include_router(base.router, prefix=settings.API_PREFIX)
+    app.include_router(user.router, prefix=settings.API_PREFIX + "/user")
+    app.include_router(auth.router, prefix=settings.API_PREFIX + "/auth")
 
     return app
 

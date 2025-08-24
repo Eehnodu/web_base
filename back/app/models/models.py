@@ -14,13 +14,31 @@ Alembic 등의 마이그레이션 도구에서도 자동으로 인식됩니다.
 """
 
 from app.database import Base
-from sqlalchemy import Column, Integer, String, DateTime
-import datetime
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
+from sqlalchemy.sql import func
 
 class User(Base):
-    __tablename__ = "users"
-
+    __tablename__ = "tb_user"
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String(100), unique=True, nullable=False)
-    email = Column(String(100), unique=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    user_id = Column(String(100), unique=True, nullable=False)
+    user_name = Column(String(100), nullable=False)
+    user_email = Column(String(100), unique=True, nullable=False)
+    user_password = Column(String(255), nullable=False)
+    user_created_at = Column(DateTime(timezone=True), server_default=func.now())
+    user_updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+class RefreshSession(Base):
+    __tablename__ = "tb_token"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("tb_user.id"), nullable=False)
+    # JWT 'jti'(고유 ID) + 토큰 본문 해시(평문 저장 금지)
+    jti = Column(String(36), nullable=False, index=True)
+    token_hash = Column(String(64), nullable=False, index=True)  # sha256 hex
+    # 만료/폐기 및 감사 용도
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    revoked = Column(Boolean, default=False, nullable=False)
+    user_agent = Column(String(255), nullable=True)
+    ip = Column(String(64), nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_used_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

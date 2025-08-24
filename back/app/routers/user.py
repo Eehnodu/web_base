@@ -19,15 +19,15 @@ nfc.py
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.schemas.base_schema import UserCreate, UserOut
-from app.services import base_service
+from app.schemas.user_schema import UserCreate, UserOut
+from app.services import user_service
 from app.database import get_db
 
 router = APIRouter()
 
-@router.post("/users", response_model=UserOut)
+@router.post("/register", response_model=UserOut)
 def create_user(
     data: UserCreate,
     db: Session = Depends(get_db)
 ):
-    return base_service.create_user(db, username=data.username, email=data.email)
+    return user_service.create_user(db, user_id=data.user_id, user_name=data.user_name, user_email=data.user_email, user_password=data.user_password)

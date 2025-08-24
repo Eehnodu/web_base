@@ -24,7 +24,7 @@ SQLALCHEMY_DATABASE_URL = settings.get_db_url()
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     pool_pre_ping=True,  # 연결 유효성 확인
-    echo=settings.env == "local",  # 로컬 환경이면 SQL 쿼리 출력
+    echo=False,
     future=True
 )
 

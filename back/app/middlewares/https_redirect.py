@@ -1,5 +1,5 @@
 from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
-from config.settings import settings
+from app.config.settings import settings
 
 def add_https_redirect(app):
     if settings.env == "prod":
