@@ -25,6 +25,7 @@ from app.database import get_db
 
 router = APIRouter()
 
+# 회원가입
 @router.post("/register", response_model=UserOut)
 def create_user(
     data: UserCreate,

@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     # 시크릿 키 (세션 쿠키 서명 등 보안 기능에 사용됨. 반드시 노출 금지!)
     secret_key: str
 
+    # JWT 관련
+    jwt_algorithm: str = "HS256"
+    access_token_expires_minutes: int = 60
+    refresh_token_expires_days: int = 7
+    
     @property
     def env(self) -> str:
         """

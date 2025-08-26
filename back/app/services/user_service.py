@@ -14,6 +14,15 @@ attendance_service.py
 from sqlalchemy.orm import Session
 from app.repository import user_repo
 from app.models import User
+from app.services import auth_service
 
-def create_user(db: Session, user_id: str, user_name: str, user_email: str, user_password: str) -> User:  
-    return user_repo.create_user(db, user_id=user_id, user_name=user_name, user_email=user_email, user_password=user_password) 
+def create_user(db: Session, user_id: str, user_name: str, user_email: str, user_password: str) -> User:
+    # 평문을 bcrypt 해시로 변환
+    hashed_pw = auth_service.hash_password(user_password)
+    return user_repo.create_user(
+        db,
+        user_id=user_id,
+        user_name=user_name,
+        user_email=user_email,
+        user_password=hashed_pw
+    )
