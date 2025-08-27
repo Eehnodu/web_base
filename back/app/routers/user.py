@@ -1,34 +1,49 @@
+# app/routers/user.py
 """
-nfc.py
+user.py
 -------
 
-이 모듈은 NFC 기반 출결 시스템의 API 엔드포인트를 정의합니다.
+사용자 관련 API (회원가입 등)
 
-📌 핵심 역할:
-    - 클라이언트(예: 라즈베리파이, 모바일 앱 등)에서 NFC 태그 정보와 함께 POST 요청을 보내면,
-      사용자의 출결 기록을 생성하는 엔드포인트를 처리합니다.
-    - 실제 출결 기록 생성 로직은 service 계층(attendance_service)에 위임합니다.
-
-✅ 구조 요약:
-    - 요청 데이터는 AttendanceCreate 스키마를 통해 검증
-    - DB 세션은 Depends(get_db)로 주입
-    - 응답은 AttendanceOut 스키마로 직렬화
-    - 업무 로직은 service 계층에 분리
+✅ 규칙
+- 요청 바디: Pydantic 스키마로 검증 (422 자동)
+- 성공 응답: JSON:API 문서 (application/vnd.api+json)
+- 오류 응답: 전역 핸들러가 RFC 7807로 변환
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
-from app.schemas.user_schema import UserCreate, UserOut
-from app.services import user_service
 from app.database import get_db
+from app.services import user_service
+from app.schemas.user_schema import UserCreate           # ✅ 요청 스키마 사용
+from app.schemas.jsonapi import single_doc, resource
+from app.config.settings import settings
 
-router = APIRouter()
+router = APIRouter(tags=["user"])  # ← prefix 없음 (패턴 B: main.py에서 /api/user 부여)
 
 # 회원가입
-@router.post("/register", response_model=UserOut)
-def create_user(
-    data: UserCreate,
-    db: Session = Depends(get_db)
-):
-    return user_service.create_user(db, user_id=data.user_id, user_name=data.user_name, user_email=data.user_email, user_password=data.user_password)
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+def create_user(data: UserCreate,                      # ✅ 명시적으로 UserCreate로 검증
+                response: Response,
+                db: Session = Depends(get_db)):
+    user = user_service.create_user(
+        db,
+        user_id=data.user_id,
+        user_name=data.user_name,
+        user_email=data.user_email,
+        user_password=data.user_password,
+    )
+
+    # Location 헤더 + JSON:API
+    response.headers["Location"] = f"{settings.API_PREFIX}/user/{user.id}"
+    response.media_type = "application/vnd.api+json"
+    doc = single_doc(
+        resource("user", user.id, {
+            "user_id": user.user_id,
+            "user_name": user.user_name,
+            "user_email": user.user_email,
+        }),
+        self_url=f"{settings.API_PREFIX}/user/{user.id}",
+    )
+    return doc.model_dump()

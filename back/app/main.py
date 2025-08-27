@@ -18,6 +18,7 @@ from app.routers import user, auth
 from app.config.settings import settings
 from app.middlewares import cors, secure_headers, session, https_redirect, access_log, rate_limiter
 from app.database import engine, Base
+from app.errors import handlers
 import app.models  # 모델 자동 인식용 import
 
 def create_app() -> FastAPI:
@@ -43,6 +44,9 @@ def create_app() -> FastAPI:
 
     # 6. Rate Limiting 설정 (라우터 단위에서 @limiter.limit 데코레이터로 적용)
     rate_limiter.add_rate_limiter(app)
+
+    # 7. 에러 핸들러 등록
+    handlers.register_error_handlers(app)
     
     # 로컬 환경에서만 DB 테이블 자동 생성
     if settings.env == "local":

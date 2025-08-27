@@ -103,26 +103,33 @@ def login(db: Session, user_id: str, password: str, *, user_agent: str | None = 
     # 반환: access_token + refresh_token
     return TokenOut(access_token=access, refresh_token=refresh)
 
-def issue_access_only(db: Session, refresh_token: str) -> str:
+def rotate_refresh_and_issue_access(db: Session, refresh_token: str) -> tuple[str, str]:
     """
-    refresh token을 검증 후 새 access token만 발급
-    (refresh token rotation은 하지 않음)
+    Refresh 회전 + 재사용 감지:
+      - 유효한 refresh면: 새 access + 새 refresh 발급, 기존 refresh 즉시 revoke
+      - revoke된 refresh가 다시 오면: 재사용으로 판단하고 사용자의 모든 refresh 폐기
+    반환: (access_token, new_refresh_token)
     """
-    # 토큰 파싱
     payload = _decode_token(refresh_token)
     if payload.get("type") != "refresh":
         raise ValueError("invalid token type")
 
-    jti = payload.get("jti")
+    old_jti = payload.get("jti")
     uid = payload.get("sub")
+    rs = auth_repo.get_refresh_session_by_jti(db, old_jti)
+    if not rs:
+        raise ValueError("refresh not found")
 
-    # DB에 저장된 refresh 세션 조회
-    rs = auth_repo.get_refresh_session_by_jti(db, jti)
-    if not rs or rs.revoked:
-        raise ValueError("refresh revoked or not found")
+    # 재사용 감지 ①: 이미 revoke된 refresh가 다시 오면 전체 세션 폐기
+    if rs.revoked:
+        # 의심 상황 → 사용자 모든 세션 폐기
+        auth_repo.revoke_all_refresh_for_user(db, int(uid))
+        raise ValueError("refresh reuse detected")
 
     # 평문 refresh 토큰이 DB의 해시와 일치하는지 검증
     if rs.token_hash != _sha256_hex(refresh_token):
+        # 위조/변조 가능성 → 강력 차단
+        auth_repo.revoke_all_refresh_for_user(db, int(uid))
         raise ValueError("token hash mismatch")
 
     # 만료 여부 확인
@@ -130,14 +137,38 @@ def issue_access_only(db: Session, refresh_token: str) -> str:
     if rs.expires_at <= now:
         raise ValueError("refresh expired")
 
-    # 마지막 사용 시각 업데이트
-    auth_repo.touch_refresh_last_used(db, jti)
-
-    # 새로운 access token 발급
-    return _create_token(
+    # ---- 새 access 발급 ----
+    access = _create_token(
         sub=str(uid), typ="access",
         exp=timedelta(minutes=settings.access_token_expires_minutes),
     )
+
+    # ---- 새 refresh 발급 + 저장 ----
+    refresh_exp = timedelta(days=settings.refresh_token_expires_days)
+    new_jti = str(uuid4())
+    new_refresh = _create_token(
+        sub=str(uid), typ="refresh",
+        exp=refresh_exp, jti=new_jti,
+    )
+
+    # 기존 refresh 즉시 revoke
+    auth_repo.mark_refresh_revoked(db, old_jti)
+
+    # 새 refresh 세션 저장
+    auth_repo.create_refresh_session(
+        db,
+        user_id=int(uid),
+        jti=new_jti,
+        token_hash=_sha256_hex(new_refresh),
+        expires_at=now + refresh_exp,
+        user_agent=rs.user_agent,  # 기존 UA/IP를 그대로 이어받거나, 최신값을 쓰고 싶으면 라우터에서 전달
+        ip=rs.ip,
+    )
+
+    # 사용 흔적 업데이트(선택): old_jti를 남기고 싶으면 위에 touch 호출 유지 가능
+    auth_repo.touch_refresh_last_used(db, old_jti)
+
+    return access, new_refresh
 
 def logout(db: Session, refresh_token: str) -> None:
     """

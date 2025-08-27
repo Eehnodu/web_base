@@ -51,6 +51,16 @@ def mark_refresh_revoked(db: Session, jti: str) -> None:
         rs.revoked = True
         db.commit()
 
+def revoke_all_refresh_for_user(db: Session, user_id: int) -> None:
+    """
+    해당 사용자의 모든 RefreshSession을 일괄 폐기 (재사용 탐지 대응)
+    """
+    q = db.query(RefreshSession).filter(RefreshSession.user_id == user_id, RefreshSession.revoked == False)
+    # 이미 revoke된 것도 함께 막고 싶으면 revoked 조건을 제거해도 됨
+    for rs in q.all():
+        rs.revoked = True
+    db.commit()
+
 def touch_refresh_last_used(db: Session, jti: str) -> None:
     """
     RefreshSession의 마지막 사용 시각(last_used_at) 업데이트
