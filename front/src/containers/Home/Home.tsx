@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { useRegister, useLogin, useMe, useLogout } from "./hooks";
+import { useRegister } from "./hooks";
+import { useLogin, useLogout, useMe } from "@/hooks/auth/auth";
 import type {
   RegisterReqUI,
   LoginReq,

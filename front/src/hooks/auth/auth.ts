@@ -1,23 +1,10 @@
 // hooks.ts
-import { baseurl } from "@/common/hooks/useAPI";
-import { api, tokenStore } from "@/common/hooks/authClient";
+import { baseurl } from "@/hooks/auth/useAPI";
+import { api, tokenStore } from "@/hooks/auth/authClient";
 import { toCompatError } from "@/types/api_type";
-import type {
-  RegisterReqUI,
-  LoginReq,
-  LoginRes,
-  MeRes,
-} from "@/types/auth_type";
+import type { LoginReq, LoginRes, MeRes } from "@/types/auth_type";
 
 const API = "/api";
-
-/** 회원가입 (쿠키 불필요하면 api.bearer.post로 바꿔도 OK) */
-export function useRegister() {
-  const { request, result, loading } = api.cookie.post<RegisterReqUI, void>();
-  const register = (body: RegisterReqUI) =>
-    request(`${API}/user/register`, body);
-  return { register, response: result, error: toCompatError(result), loading };
-}
 
 /** 로그인 (쿠키 필요, access_token 저장) */
 export function useLogin() {

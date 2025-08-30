@@ -1,5 +1,5 @@
 // authClient.ts
-import { createApiClient } from "@/common/hooks/apiClientFactory";
+import { createApiClient } from "@/hooks/auth/apiClientFactory";
 
 /** access_token 저장/조회 공용 스토어 */
 export const tokenStore = {

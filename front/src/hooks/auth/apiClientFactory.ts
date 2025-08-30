@@ -1,5 +1,5 @@
 // apiClientFactory.ts
-import { useGet, usePost } from "@/common/hooks/useAPI";
+import { useGet, usePost } from "@/hooks/auth/useAPI";
 import type { UseAPIConfig } from "@/types/api_type";
 
 /**
@@ -26,6 +26,12 @@ export function createApiClient(baseConfig: UseAPIConfig) {
     /** 쿠키 기반 호출용 (login/refresh/logout 등, Authorization 불필요) */
     cookie: {
       post: <TReq, TRes>() => usePost<TReq, TRes>({ withCredentials: true }),
+    },
+
+    /** 공개 API 전용 (Authorization 헤더 없음, 쿠키도 없음) */
+    public: {
+      get: <T>() => useGet<T>({ base: baseConfig.base }),
+      post: <TReq, TRes>() => usePost<TReq, TRes>({ base: baseConfig.base }),
     },
   };
 }
