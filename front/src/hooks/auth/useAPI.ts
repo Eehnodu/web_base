@@ -46,12 +46,20 @@ function isJsonApiResponse(ct?: string | null) {
  * - single_doc: attributes → T
  * - list_doc:   attributes[] → T (T는 배열 타입이어야)
  */
-function unwrapJsonApi<T>(doc: JsonApiSingleDoc<T>): T {
+const MERGE_ID_TYPES = new Set(["user"]); // 필요시 "post", "comment" 등 추가
+
+export function unwrapJsonApi<T>(doc: JsonApiSingleDoc<T>): T {
   const d: any = doc?.data;
-  if (Array.isArray(d)) {
-    return d.map((r: any) => r?.attributes) as unknown as T;
-  }
-  return d?.attributes as T;
+  const merge = (r: any) => {
+    const attrs = r?.attributes ?? {};
+    // 타입이 user일 때만 id 병합
+    if (r?.id != null && MERGE_ID_TYPES.has(r?.type)) {
+      return { ...attrs, id: String(r.id) };
+    }
+    return attrs;
+  };
+  if (Array.isArray(d)) return d.map(merge) as unknown as T;
+  return merge(d) as T;
 }
 
 // =========================================================

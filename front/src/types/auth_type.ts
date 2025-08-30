@@ -26,10 +26,10 @@ export type LoginRes = {
 };
 
 export type MeRes = {
-  id: number;
+  id: string; // ← 문자열
   user_id: string;
-  user_name: string;
-  user_email: string;
+  user_email: string; // ← 서버 키에 맞춤
+  user_name?: string | null;
 };
 
 /** 로그아웃 응답(JSON:API attributes) */

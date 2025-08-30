@@ -23,22 +23,19 @@ export function useLogin() {
  */
 export function useMe() {
   const { request, result, loading } = api.authed.get<MeRes>();
-  const fetchMe = () => request(`${API}/user/me`);
+  const fetchMe = () => request(`${API}/auth/me`);
   return { fetchMe, response: result, error: toCompatError(result), loading };
 }
 
 /** 로그아웃 (쿠키 필요) */
 export function useLogout() {
+  const { request, result, loading } = api.cookie.post<void, void>();
   const logout = async () => {
     try {
-      await fetch(`${baseurl}${API}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-        headers: { Accept: "application/vnd.api+json" },
-      });
+      await request(`/api/auth/logout`, undefined);
     } finally {
       tokenStore.clear();
-    }
+    } // 클라 측은 항상 로그아웃 상태로
   };
-  return { logout };
+  return { logout, response: result, error: toCompatError(result), loading };
 }

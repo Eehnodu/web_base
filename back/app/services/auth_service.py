@@ -183,3 +183,7 @@ def logout(db: Session, refresh_token: str) -> None:
     except JWTError:
         # 이미 만료되었거나 손상된 토큰이면 무시 (쿠키만 지우면 됨)
         pass
+
+def me(db: Session, user_id: int):
+    user = auth_repo.get_by_user_id(db, user_id)
+    return user
