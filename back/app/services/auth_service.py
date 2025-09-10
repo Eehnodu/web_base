@@ -6,10 +6,45 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from app.repository import auth_repo
 from app.config.settings import settings
-from app.schemas.auth_schema import TokenOut
+from app.schemas.auth_schema import TokenOut, BaseClaims, TokenType
 
-# 비밀번호 해싱/검증용 bcrypt 컨텍스트
 pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def _decode_and_require_type(token: str, expected_type: TokenType) -> BaseClaims:
+    """
+    공용 JWT 1차 검증:
+      - 서명/만료/nbf/iat: jwt.decode가 자동 검증
+      - type == expected_type 수동 확인
+      - sub 존재 확인
+    성공 시 payload 반환, 실패 시 JWTError/ValueError 발생
+    """
+    payload: BaseClaims = jwt.decode(
+        token,
+        settings.secret_key,
+        algorithms=[settings.jwt_algorithm],
+    )
+    if payload.get("type") != expected_type:
+        raise ValueError("invalid token type")
+    if not payload.get("sub"):
+        raise ValueError("missing sub")
+    return payload
+
+def validate_access_and_get_uid(token: str) -> int:
+    payload = _decode_and_require_type(token, "access")
+    try:
+        return int(payload["sub"])  # type: ignore[index]
+    except (TypeError, ValueError):
+        raise ValueError("invalid sub")
+
+def validate_refresh_and_get_uid_jti(token: str) -> tuple[int, str]:
+    payload = _decode_and_require_type(token, "refresh")
+    jti = payload.get("jti")
+    if not jti:
+        raise ValueError("missing jti")
+    try:
+        return int(payload["sub"]), str(jti)  # type: ignore[index]
+    except (TypeError, ValueError):
+        raise ValueError("invalid sub")
 
 # Password hashing helpers
 def hash_password(plain: str) -> str:
