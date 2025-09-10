@@ -2,13 +2,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, Request, status
 from sqlalchemy.orm import Session
 from jose import JWTError
-
 from app.database import get_db
 from app.services import auth_service
 from app.schemas.auth_schema import LoginIn           
 from app.schemas.jsonapi import resource, single_doc
 from app.config.settings import settings
-from jose import jwt
 
 router = APIRouter(tags=["auth"])  # ← prefix 없음 (패턴 B: main.py에서 /api/auth 부여)
 
@@ -111,7 +109,7 @@ def logout(response: Response, request: Request, db: Session = Depends(get_db)):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.get("/me", status_code=status.HTTP_200_OK)
-def me(request: Request, response: Response, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+def me(response: Response, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
     user = auth_service.me(db, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user not found")
